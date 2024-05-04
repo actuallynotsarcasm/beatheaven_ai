@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Request, Response
 from fastapi import File, UploadFile
-import subprocess
+import traceback
+import soundfile
+import librosa
+import io
 
 import service
 
@@ -14,19 +17,16 @@ async def root():
 async def find_similar(request: Request, response: Response, file: UploadFile = File(...)):
     try:
         contents = file.file.read()
-        files_path = 'song_buffer/'
-        with open(files_path + file.filename, 'wb') as f:
-            f.write(contents)
-        subprocess.call(['ffmpeg', '-i', files_path + file.filename, files_path + 'converted.wav', '-y'], 
-            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        data = service.preprocess(files_path + 'converted.wav')
-        service.clear_song_buffer()
+        readable = io.BytesIO(contents)
+        song, sr = soundfile.read(readable, channels=1, samplerate=44100, dtype='float32', format='RAW', subtype='PCM_16')
+        song, sr = librosa.resample(song, orig_sr=sr, target_sr=22050), 22050
+        data = service.preprocess(song, sr)
         output = request.app.state.model(data)[0][0]
         similar_songs = service.search_database(request.app.state.db, request.app.state.song_names, output)
-    except Exception as e:
-        raise e
+    except Exception:
         response.status_code = 500
+        traceback.print_exc()
         return {"message": "There was an error uploading the file"}
     finally:
         file.file.close()
-    return similar_songs
+    return {"result": similar_songs}

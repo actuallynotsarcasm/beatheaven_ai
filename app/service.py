@@ -23,8 +23,7 @@ def _cut_data(data, out_length=394, pad_to=None):
         
     return data
 
-def preprocess(filename: str, cqt_time_reduction=20) -> None:
-    song, sr = librosa.load(filename)
+def preprocess(song, sr, cqt_time_reduction=20) -> None:
     cqt = np.abs(librosa.cqt(y=song, sr=sr))
     height, length = cqt.shape
     cqt_compressed = cqt[:, :(length//cqt_time_reduction)*cqt_time_reduction].reshape(height, -1, cqt_time_reduction).mean(axis=2)
@@ -37,11 +36,6 @@ def preprocess(filename: str, cqt_time_reduction=20) -> None:
     ])
     result = transforms(cqt_compressed)
     return result
-
-def clear_song_buffer(path='song_buffer'):
-    files = [os.path.join(path, file) for file in os.listdir(path)]
-    for file in files:
-        os.remove(file) 
 
 def search_database(db, song_names, data):
     distances = torch.pairwise_distance(data[None, :], db)
