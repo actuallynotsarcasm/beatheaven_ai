@@ -13,7 +13,7 @@ from model import CQTNet
 async def lifespan(app: FastAPI):
     app.state.model = torch.load('data/model.pth', map_location=torch.device('cpu')).module.cpu()
     app.state.db = torch.load('data/db.pth', map_location=torch.device('cpu'))
-    app.state.song_names = pandas.read_csv('data/song_names.csv')['0']
+    app.state.song_ids = pandas.read_csv('data/song_ids.csv')['id']
     yield
 
 app = FastAPI(lifespan=lifespan)

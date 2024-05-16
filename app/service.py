@@ -37,7 +37,7 @@ def preprocess(song, sr, cqt_time_reduction=20) -> None:
     result = transforms(cqt_compressed)
     return result
 
-def search_database(db, song_names, data):
+def search_database(db, song_ids, data):
     distances = torch.pairwise_distance(data[None, :], db)
     indices = torch.topk(distances, 10, largest=False).indices.numpy()
-    return list(song_names[indices])
+    return list(song_ids[indices])

@@ -22,7 +22,7 @@ async def find_similar(request: Request, response: Response, file: UploadFile = 
         song, sr = librosa.resample(song, orig_sr=sr, target_sr=22050), 22050
         data = service.preprocess(song, sr)
         output = request.app.state.model(data)[0][0]
-        similar_songs = service.search_database(request.app.state.db, request.app.state.song_names, output)
+        similar_songs = service.search_database(request.app.state.db, request.app.state.song_ids, output)
     except Exception:
         response.status_code = 500
         traceback.print_exc()
