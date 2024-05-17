@@ -2,6 +2,7 @@ import librosa
 import torch
 import numpy as np
 import torchvision.transforms as T
+from torch.nn.functional import tanh
 import os
 
 
@@ -23,6 +24,7 @@ def _cut_data(data, out_length=394, pad_to=None):
         
     return data
 
+
 def preprocess(song, sr, cqt_time_reduction=20) -> None:
     cqt = np.abs(librosa.cqt(y=song, sr=sr))
     height, length = cqt.shape
@@ -37,7 +39,18 @@ def preprocess(song, sr, cqt_time_reduction=20) -> None:
     result = transforms(cqt_compressed)
     return result
 
+
 def search_database(db, song_ids, data):
     distances = torch.pairwise_distance(data[None, :], db)
-    indices = torch.topk(distances, 10, largest=False).indices.numpy()
-    return list(song_ids[indices])
+    search_results = torch.topk(distances, 10, largest=False)
+    indices = search_results.indices.numpy()
+    ids = list(song_ids[indices])
+    distances = search_results.values
+    relevances = 1 - tanh(distances / 2)
+    answer = []
+    for id, relevance in zip(ids, relevances):
+        answer.append({
+            'id': id,
+            'relevance': relevance.item()
+        })
+    return answer
